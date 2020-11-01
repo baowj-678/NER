@@ -1,20 +1,22 @@
 import sys
-sys.path.append("..")
+import os
+abs_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(abs_path)
 from utils import DataDeal
 
 class Conll2003Reader():
     def __init__(self, path):
         super().__init__()
     
-    @classmethod
-    def load_data(self, path):
+    @staticmethod
+    def load_data(path):
         """ 加载Conll2003数据集
         @param:
         :path: 文件路径
         @return:
         :data list(sent, name-entity): 语句和命名实体
         """
-        tmp = DataDeal.load_data(path, cls=' ')
+        tmp = DataDeal.load_data(path=path, delimiter=' ')
         data = []
         sentence = []
         named_entity = []
@@ -35,7 +37,7 @@ class Conll2003Reader():
 
 
 if __name__ == "__main__":
-    data = Conll2003Reader.load_data('test.txt')
+    data = Conll2003Reader.load_data('dataset/CONLL2003/test.txt')
     sent = data[:7]
     for line in sent:
         print(' '.join(line[0]),'\n',  ' '.join(line[1]))
