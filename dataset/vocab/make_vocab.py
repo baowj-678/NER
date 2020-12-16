@@ -1,14 +1,20 @@
-from os.path import lexists
-import sys
+""" 根据原文件生成字典文件
+@Author: Bao Wenjie
+@Email: bwj_678@qq.com
+@Date: 2020/10/30
+"""
+import nltk
 import os
-abs_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys
+abs_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(abs_path)
-from utils import DataDeal
+from dataset.utils import *
 
-class Conll2003Processor():
-    def __init__(self, path):
-        super().__init__()
-    
+
+class MakeVocab():
+    def __init__(self):
+        pass
+
     @staticmethod
     def make_vocab(src_path, word_index, entity_index, save_path):
         """ 加载Conll2003数据集
@@ -50,39 +56,11 @@ class Conll2003Processor():
         DataDeal.save_single(vocab_save_path, list(vocab.keys()))
         DataDeal.save_single(entity_save_path, list(entitys.keys()))
         return
-    
-    @staticmethod
-    def analyse_corp(path: str='', delimiter: str=' '):
-        """ 数据分析\n
-        @param:\n
-        :path: (str) 文件路径\n
-        :delimier: 分隔符\n
-        @return:
-        :lnegth_num (dict)\n
-        """
-        lengths_num = {}
-        """ 单文件处理 """
-        data = DataDeal.load_data(path=path, delimiter=delimiter)
-        length = 0
-        for line in data:
-            if len(line) > 1:
-                length += 1
-            else:
-                if length in lengths_num:
-                    lengths_num[length] += 1
-                else:
-                    lengths_num[length] = 1
-                length = 0
-        if length > 0:
-            if length in lengths_num:
-                lengths_num[length] += 1
-            else:
-                lengths_num[length] = 1
-        return lengths_num
-    
 
-if __name__ == "__main__":
-    # src_path = ['dataset/CONLL2003/test.txt', 'dataset/CONLL2003/train.txt', 'dataset/CONLL2003/valid.txt']
-    # save_path = 'dataset/CONLL2003/'
-    # Conll2003Processor.make_vocab(src_path, 0, -1, save_path)
-    print(Conll2003Processor.analyse_corp('D:/NLP/NER/dataset/CONLL2003/train.txt'))
+if __name__ == '__main__':
+    # MakeVocab.make_vocab_csv(['D:/NLP/TC/dataset/SST-1/train.tsv', 'D:/NLP/TC/dataset/SST-1/test.tsv', 'D:/NLP/TC/dataset/SST-1/dev.tsv'],
+    #                          tgt_path='D:/NLP/TC/dataset/SST-1/vocab.txt',
+    #                          seq_index=1,
+    #                          delimiter='\t')
+    pass
+    # print(nltk.word_tokenize("The Rock is destined to be the 21st Century s newConan '' and that he s going to make a splash even greater than; it's Arnold Schwarzenegger , Jean-Claud Van Damme or Steven Segal"))

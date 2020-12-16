@@ -23,9 +23,9 @@ class Analyse:
 
     @staticmethod
     def analyse(path,
-                delimiter='\t',
-                sent_index=1,
-                label_index=-1,
+                delimiter=' ',
+                word_index=1,
+                entity_index=-1,
                 has_head=True,
                 length_analyse=True,
                 word_analyse=True,
@@ -38,67 +38,46 @@ class Analyse:
         :delimiter: 分割符
         """
         vocab = dict()
-        label = dict()
+        entities = dict()
         max_length = 0
         sum_length = 0
         sum_lines = 0
         lengths = dict()
         print('-' * 8, 'analyse', '-' * 8)
+        def make_vocab_single(path):
+            """ 单文件处理 """
+            data = DataDeal.load_data(path=path, delimiter=delimiter)
+            seq_length = 0
+            for line in data:
+                if len(line) > 1:
+                    seq_length += 1
+                    word = line[word_index]
+                    word = word.lower()
+                    if word in vocab:
+                        vocab[word] += 1
+                    else:
+                        vocab[word] = 1
+                    entity = line[entity_index]
+                    if entity in entities:
+                        entities[entity] += 1
+                    else:
+                        entities[entity] = 1
+                else:
+                    # sum_lines += 1
+
+
+                    
+                    if seq_length in lengths:
+                        lengths[seq_length] += 1
+                    else:
+                        lengths[seq_length] = 1
+                    seq_length = 0
+                
         if isinstance(path, list):
             for _ in path:
-                data = DataDeal.load_data(path=_, delimiter=delimiter)
-                if has_head:
-                    data = data[1:]
-                for line in data:
-                    if word_analyse or length_analyse:
-                        sent = line[sent_index]
-                        words = nltk.word_tokenize(sent)
-                        max_length = max(len(words), max_length)
-                        sum_length += len(words)
-                        sum_lines += 1
-                        if len(words) in lengths:
-                            lengths[len(words)] += 1
-                        else:
-                            lengths[len(words)] = 1
-                        if word_analyse:
-                            for word in words:
-                                if word in vocab:
-                                    vocab[word] += 1
-                                else:
-                                    vocab[word] = 1
-                    if label_analyse:
-                        label_ = line[label_index]
-                        if label_ in label:
-                            label[label_] += 1
-                        else:
-                            label[label_] = 1
+                make_vocab_single(_)
         else:
-            data = DataDeal.load_data(path=path, delimiter=delimiter)
-            if has_head:
-                data = data[1:]
-            for line in data:
-                if word_analyse or length_analyse:
-                    sent = line[sent_index]
-                    words = nltk.word_tokenize(sent)
-                    max_length = max(len(words), max_length)
-                    sum_length += len(words)
-                    sum_lines += 1
-                    if len(words) in lengths:
-                        lengths[len(words)] += 1
-                    else:
-                        lengths[len(words)] = 1
-                    if word_analyse:
-                        for word in words:
-                            if word in vocab:
-                                vocab[word] += 1
-                            else:
-                                vocab[word] = 1
-                if label_analyse:
-                    label_ = line[label_index]
-                    if label_ in label:
-                        label[label_] += 1
-                    else:
-                        label[label_] = 1
+            make_vocab_single(path)
         print("-" * 8, "result", '-' * 8)
         font = {'family': 'SimHei',
                 'style': 'italic',
@@ -137,5 +116,5 @@ class Analyse:
 
 
 if __name__ == '__main__':
-    Analyse.analyse(path=['../SST-1/test.tsv', '../SST-1/train.tsv', '../SST-1/dev.tsv'],
-                    save_path='../SST-1/vocab_analyse.json')
+    Analyse.analyse(path=['dataset/CONLL2003/train.txt', 'dataset/CONLL2003/test.txt', 'dataset/CONLL2003/valid.txt'],
+                    save_path='dataset/CONLL2003/vocab_analyse.json')

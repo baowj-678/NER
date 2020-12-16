@@ -7,46 +7,86 @@
 
 import torch
 import torch.nn as nn
+import torch.distributions as tdist
+from torch.nn.utils.rnn import pack_padded_sequence 
 
 
 class CNN(nn.Module):
-    def __init__(self, device, embedding_size, p=0.1, n=5, padding=2):
+    def __init__(self, device, char_embedding_dim, p=0.1, kernel_n=5, padding=2, char_num=30, char_padding_id=0, max_sent_length=20, max_word_length=15):
         super(CNN, self).__init__()
         """ CNN初始化
         """
+        # padding
+        self.padding = char_padding_id
+        # max sentence length
+        self.max_sent_length = max_sent_length
+        # max word length
+        self.max_word_length = max_word_length
+        # character embedding dim
+        self.char_embedding_dim = char_embedding_dim
+        # Embedding
+        Sampler = tdist.Normal(torch.tensor(0.0), torch.tensor((3/char_embedding_dim)**0.5))
+        self.char_embedding = nn.Parameter(Sampler.sample(sample_shape=(char_num, char_embedding_dim)), requires_grad=True).to(device)
         # dropout
         self.dropout = nn.Dropout(p=p)
         # convolution
-        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(n, 1), stride=1, padding=(padding, 0))
+        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(kernel_n, 1), stride=1, padding=(padding, 0))
         # max pooling
         self.max_pooling = nn.AdaptiveMaxPool1d(output_size=1)
 
-    def forward(self, embedded_char):
-        """ 卷积
-        :embedded_char (batch_size, sent_length, word_length, embedding_size)
-        :char_representation (batch_size, sent_length, hidden_size)
+    def forward(self, data):
+        """ 卷积\n
+        @param:\n
+        :data (batch_size, sent_length)[str]\n
+        @return:\n
+        :data_embedded (batch_size, sent_length, hidden_size), the embedded word of every sentence.\n
+        :length (batch_size), the lengths for every sentence of batch.\n
         """
-        char_representation = []
-        for sent_embedded_char in embedded_char:
-            sent = []
-            for word_embedded_char in sent_embedded_char: 
-                # (word_length, embedding_size)
-                word_embedded_char = word_embedded_char.unsqueeze(dim=0).unsqueeze(dim=0)
-                # (1, 1, word_length, embedding_size)
-                word_embedded_char = self.dropout(word_embedded_char) 
-                word_embedded_char = self.conv(word_embedded_char).squeeze(dim=0) # (1, word_length + pad - k + 1, hidden_size)
-                word_embedded_char = word_embedded_char.permute([0, 2, 1])
-                # (1, hidden_size, word_length + pad - k + 1)
-                word_embedded_char = self.max_pooling(word_embedded_char).squeeze(dim=2) 
-                # (1, hidden_size) 
-                sent.append(word_embedded_char)
-            sent = torch.cat(sent, dim=0)
-            char_representation.append(sent) # (sent_length, hidden_size)
-        char_representation = torch.stack(char_representation, dim=0)
-        return char_representation
+        data, length = self.embedding(data)
+        # data (batch_size, max_sent_length, max_word_length, char_embedding_size)
+        # length (batch_size)
+        data = self.dropout(data)
+        batch_size, max_sent_length = data.shape[:2]
+        data = data.unsqueeze(dim=2).flatten(start_dim=0, end_dim=1)
+        # (batch_size * max_sent_length, 1, max_word_length, char_embedding_size)
+        data_conv = self.conv(data).squeeze(dim=1)
+        # (batch_size * max_sent_length, max_word_length + padding*2 - kernel_n + 1, char_embedding_size)
+        data_permute = data_conv.permute([0, 2, 1])
+        # (batch_size * max_sent_length, char_embedding_size, max_word_length + padding*2 - kernel_n + 1)
+        data_pool = self.max_pooling(data_permute).squeeze(dim=2)
+        # (batch_size * max_sent_length, char_embedding_size)
+        data_embedded = data_pool.reshape(batch_size, max_sent_length, -1)
+        # (batch_size, max_sent_length, char_embedding_size)
+        return (data_embedded, length)
+    
+    def embedding(self, data):
+        """ character-level embedding\n
+        @parameter:\n
+        :data [list](batch_size, sent_length):[str], source without embedding\n
+        @return:\n
+        :embedding_data (batch_size, sent_length, max_sent_length, char_embedding_dim)\n
+        :length [list](batch_size)[int], sentence length for every batch\n
+        """
+        batch_size = len(data)
+        embedding_data = torch.zeros(size=(batch_size, self.max_sent_length, self.max_word_length, self.char_embedding_dim))
+        length = []
+        for i, sent in enumerate(data):
+            length.append(len(sent))
+            for j, word in enumerate(sent):
+                for k, c in enumerate(word):
+                    embedding_data[i, j, k] = self.char_embedding[ord(c) - ord('a') + 1]
+                for k in range(self.max_word_length - len(word)):
+                    embedding_data[i, j, k + len(word)] = self.char_embedding[self.padding]
+        return (embedding_data, length)
+        
 
 
 if __name__ == "__main__":
-    cnn = CNN(torch.device('cpu'), embedding_size=5)
-    embedded_char = torch.randn(size=[3, 4, 6, 5])
-    print(cnn(embedded_char).shape)
+    cnn = CNN(torch.device('cpu'), char_embedding_dim=5)
+    embedded_char = [['hello', 'world'], ['i', 'am', 'student']]
+    print(cnn(embedded_char))
+
+    # m = nn.AdaptiveMaxPool1d(1)
+    # input = torch.randn(4, 64, 8)
+    # output = m(input)
+    # print(output.shape)

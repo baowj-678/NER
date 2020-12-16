@@ -83,5 +83,5 @@ class DataDeal:
             json.dump(dict_, json_file, indent=2)
 
 if __name__ == "__main__":
-    data = DataDeal.load_data(path='dataset/CONLL2003/test.txt', delimiter=' ')
+    data = DataDeal.load_data(path='D:/NLP/NER/dataset/CONLL2003/test.txt', delimiter=' ')
     print(data[:9])
