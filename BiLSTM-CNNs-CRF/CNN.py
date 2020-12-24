@@ -12,12 +12,24 @@ from torch.nn.utils.rnn import pack_padded_sequence
 
 
 class CNN(nn.Module):
-    def __init__(self, device, char_embedding_dim, p=0.1, kernel_n=5, padding=2, char_num=30, char_padding_id=0, max_sent_length=20, max_word_length=15):
+    def __init__(self, 
+                 device, 
+                 char_vocab, 
+                 char_embedding_dim, 
+                 p=0.1, 
+                 kernel_n=5, 
+                 padding=2,
+                 max_sent_length=20, 
+                 max_word_length=15):
         super(CNN, self).__init__()
         """ CNN初始化
         """
+        # character level vocab
+        self.char_vocab = char_vocab
+        # device
+        self.device = device
         # padding
-        self.padding = char_padding_id
+        self.padding = char_vocab.pad_i
         # max sentence length
         self.max_sent_length = max_sent_length
         # max word length
@@ -26,7 +38,7 @@ class CNN(nn.Module):
         self.char_embedding_dim = char_embedding_dim
         # Embedding
         Sampler = tdist.Normal(torch.tensor(0.0), torch.tensor((3/char_embedding_dim)**0.5))
-        self.char_embedding = nn.Parameter(Sampler.sample(sample_shape=(char_num, char_embedding_dim)), requires_grad=True).to(device)
+        self.char_embedding = nn.Parameter(Sampler.sample(sample_shape=(len(char_vocab), char_embedding_dim)), requires_grad=True).to(device)
         # dropout
         self.dropout = nn.Dropout(p=p)
         # convolution
@@ -42,9 +54,10 @@ class CNN(nn.Module):
         :data_embedded (batch_size, sent_length, hidden_size), the embedded word of every sentence.\n
         :length (batch_size), the lengths for every sentence of batch.\n
         """
+        print(self.conv.weight)
         data, length = self.embedding(data)
-        # data (batch_size, max_sent_length, max_word_length, char_embedding_size)
-        # length (batch_size)
+        # data [tensor](batch_size, max_sent_length, max_word_length, char_embedding_size)
+        # length [tensor](batch_size)
         data = self.dropout(data)
         batch_size, max_sent_length = data.shape[:2]
         data = data.unsqueeze(dim=2).flatten(start_dim=0, end_dim=1)
@@ -71,13 +84,25 @@ class CNN(nn.Module):
         embedding_data = torch.zeros(size=(batch_size, self.max_sent_length, self.max_word_length, self.char_embedding_dim))
         length = []
         for i, sent in enumerate(data):
-            length.append(len(sent))
-            for j, word in enumerate(sent):
-                for k, c in enumerate(word):
-                    embedding_data[i, j, k] = self.char_embedding[ord(c) - ord('a') + 1]
-                for k in range(self.max_word_length - len(word)):
-                    embedding_data[i, j, k + len(word)] = self.char_embedding[self.padding]
+            length_tmp = min(len(sent), self.max_sent_length)
+            length.append(length_tmp)
+            for j, word in enumerate(sent[:length_tmp]):
+                if len(word) > self.max_word_length:
+                    for k, c in enumerate(word[:self.max_word_length]):
+                        embedding_data[i, j, k] = self.char_embedding[self.char_vocab[c]]
+                else:
+                    for k, c in enumerate(word):
+                        embedding_data[i, j, k] = self.char_embedding[self.char_vocab[c]]
+                    for k in range(self.max_word_length - len(word)):
+                        embedding_data[i, j, k + len(word)] = self.char_embedding[self.padding]
+        embedding_data = embedding_data.to(self.device)
+        length = torch.tensor(length, device=self.device)
         return (embedding_data, length)
+    
+    def save_gradient(self, Model, grad_i, grad_o):
+        """ 保存梯度
+        """
+        self.gradients = {Model, (grad_i, grad_o)}
         
 
 

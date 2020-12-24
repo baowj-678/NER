@@ -1,5 +1,5 @@
-import numpy
-b = [3, 2, 1, 4]
-a = numpy.argsort(b)
-a = b[a]
-print(a)
+import os
+
+data_dir = 'D:/NLP/NER/dataset/'
+train_data_path = os.path.join(data_dir, 'CONLL2003/test.txt')
+print(train_data_path)

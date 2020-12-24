@@ -33,6 +33,22 @@ $$p(\bold{y|z;W,b})=\frac{\prod_{i=1}^n\psi_i(y_{i-1},y_i,\bold{z})}{\sum_{y'\in
 
 * $\bold{W}_{y',y}^T$，$\bold{b}_{y',y}$：是矩阵参数；
 
+
+
+#### P_up 计算
+
+
+
+#### **P_down**计算：
+
+$$P\_down=\sum_{y'\in\mathcal{Y}(\bold{z})}\prod_{i=1}^n\psi_i(y_{i-1}',y_i',\bold{z})$$
+
+$$$$
+
+
+
+
+
 ****
 
 #### practice
