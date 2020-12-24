@@ -7,8 +7,6 @@
 
 import torch
 import torch.nn as nn
-import torch.distributions as tdist
-from torch.nn.utils.rnn import pack_padded_sequence 
 
 
 class CNN(nn.Module):
@@ -37,12 +35,13 @@ class CNN(nn.Module):
         # character embedding dim
         self.char_embedding_dim = char_embedding_dim
         # Embedding
-        Sampler = tdist.Normal(torch.tensor(0.0), torch.tensor((3/char_embedding_dim)**0.5))
-        self.char_embedding = nn.Parameter(Sampler.sample(sample_shape=(len(char_vocab), char_embedding_dim)), requires_grad=True).to(device)
+        self.char_embedding = nn.Parameter(torch.zeros((len(char_vocab), char_embedding_dim), dtype=torch.float64), requires_grad=True).to(device)
+        nn.init.normal_(self.char_embedding, 0, (3/char_embedding_dim) ** 0.5)
         # dropout
         self.dropout = nn.Dropout(p=p)
         # convolution
-        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(kernel_n, 1), stride=1, padding=(padding, 0))
+
+        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(kernel_n, 1), stride=1, padding=(padding, 0)).double()
         # max pooling
         self.max_pooling = nn.AdaptiveMaxPool1d(output_size=1)
 
@@ -54,12 +53,12 @@ class CNN(nn.Module):
         :data_embedded (batch_size, sent_length, hidden_size), the embedded word of every sentence.\n
         :length (batch_size), the lengths for every sentence of batch.\n
         """
-        print(self.conv.weight)
+        # print(self.conv.weight)
         data, length = self.embedding(data)
         # data [tensor](batch_size, max_sent_length, max_word_length, char_embedding_size)
         # length [tensor](batch_size)
         data = self.dropout(data)
-        batch_size, max_sent_length = data.shape[:2]
+        batch_size, max_sent_length = data.shape[: 2]
         data = data.unsqueeze(dim=2).flatten(start_dim=0, end_dim=1)
         # (batch_size * max_sent_length, 1, max_word_length, char_embedding_size)
         data_conv = self.conv(data).squeeze(dim=1)
@@ -80,11 +79,14 @@ class CNN(nn.Module):
         :embedding_data (batch_size, sent_length, max_sent_length, char_embedding_dim)\n
         :length [list](batch_size)[int], sentence length for every batch\n
         """
+        # Max Batch Sentence Length
+        max_batch_seq_len = len(data[0])
+        #
         batch_size = len(data)
-        embedding_data = torch.zeros(size=(batch_size, self.max_sent_length, self.max_word_length, self.char_embedding_dim))
+        embedding_data = torch.zeros(size=(batch_size, max_batch_seq_len, self.max_word_length, self.char_embedding_dim), dtype=torch.float64)
         length = []
         for i, sent in enumerate(data):
-            length_tmp = min(len(sent), self.max_sent_length)
+            length_tmp = min(len(sent), max_batch_seq_len)
             length.append(length_tmp)
             for j, word in enumerate(sent[:length_tmp]):
                 if len(word) > self.max_word_length:

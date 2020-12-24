@@ -7,7 +7,8 @@ from typing import Optional
 import torch
 import torch.nn as NN
 import torch.distributions as tdist
-from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence, PackedSequence 
+from torch.nn.parameter import Parameter
+from torch.nn.utils.rnn import pad_packed_sequence
 import numpy as np
 import copy
 
@@ -28,10 +29,14 @@ class CRF(NN.Module):
         self._entity_start_ = entity_vocab.start_i
         self._entity_end_ = entity_vocab.end_i
         # 参数初始化(mu=0, sigma=1.0)
-        Sampler = tdist.Normal(torch.tensor(0.0), torch.tensor(0.1))
-        # Parameters
-        self.W = NN.Parameter(Sampler.sample(sample_shape=(class_num, class_num, 1, hidden_size)), requires_grad=True).to(device)
-        self.b = NN.Parameter(Sampler.sample(sample_shape=(class_num, class_num)), requires_grad=True).to(device)
+        self.W = NN.Parameter(torch.zeros((class_num, class_num, 1, hidden_size), dtype=torch.float64, requires_grad=True).to(device))
+        self.b = NN.Parameter(torch.zeros((class_num, class_num), dtype=torch.float64, requires_grad=True).to(device))
+        NN.init.uniform_(self.W, 0, 1)
+        NN.init.uniform_(self.b, 0, 1)
+        # Sampler = tdist.Normal(torch.tensor(0.0), torch.tensor(0.1))
+        # # Parameters
+        # self.W = NN.Parameter(Sampler.sample(sample_shape=(class_num, class_num, 1, hidden_size)), requires_grad=True).to(device)
+        # self.b = NN.Parameter(Sampler.sample(sample_shape=(class_num, class_num)), requires_grad=True).to(device)
     
     def forward(self, input, entity=None, length: Optional[int]=None):
         """ 前向传播\n

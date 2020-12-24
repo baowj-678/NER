@@ -25,7 +25,7 @@ def load_glove(glove_file: Optional[str], word2vec_file: str, vocab, embed_size:
     print('-'*8 + ' load successfully ' + '-'*8)
     # load data
     vocab_size = len(vocab) + 1
-    weight = torch.zeros(vocab_size + 1, embed_size)
+    weight = torch.zeros(vocab_size + 1, embed_size, dtype=torch.float64)
     for word in model.index2word:
         index = vocab[word]
         if index != vocab._pad_i_:

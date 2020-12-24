@@ -38,8 +38,6 @@ class Model(nn.Module):
         """
         # Device
         self.device = device
-        # Max sentence length
-        self.max_sent_length = max_sent_length
         # Vocab
         self.vocab = vocab
         # CNN for Character-level Representation
@@ -61,7 +59,7 @@ class Model(nn.Module):
                             bias=True,
                             batch_first=True,
                             # dropout=dropout,
-                            bidirectional=True).to(device)
+                            bidirectional=True).double().to(device)
         # CRF
         self.crf = CRF(hidden_size=hidden_size*2, # LSTM是双向的
                        class_num=class_num,
@@ -77,26 +75,25 @@ class Model(nn.Module):
         :target list[int]: \n
         """
         """ CNN """
-        # if target_entity is not None:
-        #     target_entity = torch.tensor(target_entity, device=self.device)
-        #     target_entity = target_entity.permute([1, 0])
-        #     # (seq_length, batch_size)
-        input_data_char_embeded, input_data_length = self.cnn(input_data) 
-        # (batch_size, sent_length, char_embeded_size)
+        # Batch Sentence Max Length
+        batch_seq_max_len = len(input_data[0])
+        input_data_char_embeded, input_data_length = self.cnn(input_data)
+        # (batch_size, batch_sent_length, char_embeded_size)
         # (batch_size)
-        input_data_index, input_data_length_ = self.vocab.wordlists2index(input_data, self.max_sent_length)
+        input_data_index, input_data_length_ = self.vocab.wordlists2index(input_data, batch_seq_max_len)
         input_data_index = torch.tensor(input_data_index, device=self.device)
         input_data_length_ = torch.tensor(input_data_length_, device=self.device)
-        # [tensor](batch_size, sent_length)
+        # [tensor](batch_size, batch_sent_length)
         # [tensor](batch_size)
         assert torch.equal(input_data_length, input_data_length_)
         input_data_word_embeded = self.word_embedding(input_data_index)
-        # (batch_size, sent_length, word_embeded_size)
+        # (batch_size, batch_sent_length, word_embeded_size)
         input_data_embeded = torch.cat((input_data_char_embeded, input_data_word_embeded), dim=2)
-        # (batch_size, sent_length, hidden_size (word_embeded_size + char_embeded_size))
+        # (batch_size, batch_sent_length, hidden_size (word_embeded_size + char_embeded_size))
         # print('CNN finish')
         """ LSTM """
         input_data_packed = pack_padded_sequence(input_data_embeded, input_data_length, batch_first=True)
+        
         data_lstm, hidden_state = self.lstm(input_data_packed)
         # print('BiLSTM finish')
         """ CRF """
