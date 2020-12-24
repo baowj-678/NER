@@ -8,12 +8,12 @@ import os
 abs_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(abs_path)
 from torch.utils.data import Dataset
-from vocab import Vocab
+from vocab import Vocab, EntityVocab
 from utils import *
 
 
 class DataSet(Dataset):
-    def __init__(self, path, vocab, entity2index):
+    def __init__(self, path, vocab, entity_vocab, entity_padding_len):
         """ 初始化\n
         @param:\n
         :path: 文件路径\n
@@ -25,7 +25,9 @@ class DataSet(Dataset):
         self.word_lists = None
         self.entity_lists = None
         self.length_list = None
-        self.load_data(path, delimiter=' ', entity2index=entity2index)
+        self.entity_padding_len = entity_padding_len
+        self.entity_vocab = entity_vocab
+        self.load_data(path, delimiter=' ', entity_vocab=entity_vocab)
 
     def __getitem__(self, index):
         return (self.word_lists[index],     # 句子
@@ -35,7 +37,7 @@ class DataSet(Dataset):
     def __len__(self):
         return len(self.word_lists)
 
-    def load_data(self, path, entity2index, delimiter=" ", word_index=0, entity_index=3):
+    def load_data(self, path, entity_vocab, delimiter=" ", word_index=0, entity_index=3):
         """ 加载数据\n
         @param:\n
         :path: (str) 文件路径\n
@@ -45,7 +47,7 @@ class DataSet(Dataset):
         :word_index: (int) 单词的索引\n
         :entity_index: (int) 实体的索引\n
         @return:
-        :word_lists: [list](batch_size, sent_len) 单词(小写)\n
+        :word_lists: [list](batch_size, sent_len) 单词(包括大写)\n
         :entity_lists: [list](batch_size, sent_len) 对应的实体索引\n
         """
         self.word_lists = []
@@ -60,10 +62,9 @@ class DataSet(Dataset):
                 word = line[word_index]
                 if word == '-DOCSTART-':
                     continue
-                word = word.lower()
                 word_list.append(word)
-                entity = entity2index[line[entity_index]]
-                entity_list.append(entity)
+                entity = line[entity_index]
+                entity_list.append(entity_vocab[entity])
             else:
                 if len(word_list) > 0:
                     self.word_lists.append(word_list)
@@ -80,13 +81,9 @@ class DataSet(Dataset):
 
 if __name__ == '__main__':
     vocab = Vocab('D:/NLP/NER/dataset/CONLL2003/vocab.txt')
-    labels = ['O', 'B-LOC', 'I-LOC', 'B-PER', 'I-PER', 'B-MISC', 'I-MISC', 'B-ORG', 'I-ORG']
-    entity2index = {}
-    index2entity = {}
-    for i, label in enumerate(labels):
-        entity2index[label] = i
-        index2entity[i] = label
+    entity_vocab = EntityVocab('D:/NLP/NER/dataset/CONLL2003/entity.txt')
     dataset = DataSet(path='D:/NLP/NER/dataset/CONLL2003/test.txt',
                       vocab=vocab,
-                      entity2index=entity2index)
+                      entity_vocab=entity_vocab,
+                      entity_padding_len=10)
     print(dataset[9])

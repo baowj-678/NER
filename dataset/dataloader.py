@@ -10,7 +10,7 @@ import os
 abs_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(abs_path)
 from vocab import Vocab
-from dataset.dataset import DataSet
+from dataset import DataSet
 
 def collate_func(X):
     """ batch数据处理 (word_list, entity_list, length)
@@ -31,11 +31,10 @@ def collate_func(X):
     entity_lists = np.array(entity_lists)
     length_list = np.array(length_list)
     # Sort
-    x_indices = np.argsort(length_list)[:-1]
+    x_indices = np.argsort(length_list)[::-1]
     length_list = length_list[x_indices]
     word_lists = word_lists[x_indices]
     entity_lists = entity_lists[x_indices]
-    print(length_list, word_lists, entity_lists)
     # Pack
     # word = pack_padded_sequence(word_lists, length_list, batch_first=True)
     # entity = pack_padded_sequence(entity_lists, length_list, batch_first=True)
@@ -71,5 +70,4 @@ if __name__ == '__main__':
                       entity2index=entity2index)
     dataloader = DataLoader(dataset)
     for epoch, data in enumerate(dataloader):
-        print(data)
         break

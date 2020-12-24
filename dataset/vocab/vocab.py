@@ -59,11 +59,11 @@ class Vocab:
             # padding
             if len(word_list) > max_length:
                 # cutting
-                index_list = [self.__getitem__(word) for word in word_list[:max_length]]
+                index_list = [self.__getitem__(word.lower()) for word in word_list[:max_length]]
                 index_length = max_length
             else:
                 # padding
-                index_list = [self.__getitem__(word) for word in word_list] + [self._pad_i_] * (max_length - len(word_list))
+                index_list = [self.__getitem__(word.lower()) for word in word_list] + [self._pad_i_] * (max_length - len(word_list))
                 index_length = len(word_list)
         return (index_list, index_length)
 
