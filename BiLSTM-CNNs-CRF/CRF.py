@@ -33,11 +33,12 @@ class CRF(NN.Module):
         self.b = NN.Parameter(torch.zeros((class_num, class_num), dtype=torch.float64, requires_grad=True).to(device))
         NN.init.uniform_(self.W, 0, 1)
         NN.init.uniform_(self.b, 0, 1)
-        # Sampler = tdist.Normal(torch.tensor(0.0), torch.tensor(0.1))
-        # # Parameters
-        # self.W = NN.Parameter(Sampler.sample(sample_shape=(class_num, class_num, 1, hidden_size)), requires_grad=True).to(device)
-        # self.b = NN.Parameter(Sampler.sample(sample_shape=(class_num, class_num)), requires_grad=True).to(device)
-    
+        # Tanh
+#######################################################################
+        self.softmax = NN.Softmax(dim=-1)
+#######################################################################
+
+
     def forward(self, input, entity=None, length: Optional[int]=None):
         """ 前向传播\n
         @param:\n
@@ -61,13 +62,17 @@ class CRF(NN.Module):
         P = P.permute([1, 0, 2, 3])
         # (seq_length, batch_size, class_num, class_num)
         P = P + self.b
+##################################################################
+        P = self.softmax(P)
+##################################################################
+        # (seq_length, batch_size, class_num, class_num)
         if entity is None:
             return self.predict(P, length)
         else:
             P_UP = self.p_up(P, length, entity)
             P_DOWN = self.p_down(P, length)
             # (batch_size)
-            P_FINAL = P_UP / P_DOWN
+            P_FINAL = P_DOWN - P_UP
             Loss = torch.sum(P_FINAL)
             return Loss
 
@@ -79,7 +84,7 @@ class CRF(NN.Module):
         @return:\n
         :p_down (batch_size) log(sigma(prob(exp(Wz+b))))\n
         """
-        P = torch.exp(P)
+        # P = torch.exp(P)
         p_down = P[0, :, self._entity_start_, :].unsqueeze(dim=1) 
         # (batch_size, 1, class_num) t=0步，第一个单词为START情况下，下个单词为i的概率
         p_sums = [p_down]
@@ -117,8 +122,9 @@ class CRF(NN.Module):
                 # (class_num, class_num)
                 P_i_t = P_i[t]
                 next_entity = entity[i][t]
-                p_tmp += P_i_t[last_entity, next_entity]
-                last_entity = next_entity
+############################################################################################
+                p_tmp += torch.log(P_i_t[last_entity, next_entity])
+############################################################################################                last_entity = next_entity
             P_UP.append(p_tmp)
         P_UP = torch.tensor(P_UP, device=self.device)
         return P_UP

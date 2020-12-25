@@ -29,7 +29,7 @@ class CNN(nn.Module):
         # padding
         self.padding = char_vocab.pad_i
         # max sentence length
-        self.max_sent_length = max_sent_length
+        self.max_seq_len = max_sent_length
         # max word length
         self.max_word_length = max_word_length
         # character embedding dim
@@ -80,7 +80,7 @@ class CNN(nn.Module):
         :length [list](batch_size)[int], sentence length for every batch\n
         """
         # Max Batch Sentence Length
-        max_batch_seq_len = len(data[0])
+        max_batch_seq_len = min(len(data[0]), self.max_seq_len)
         #
         batch_size = len(data)
         embedding_data = torch.zeros(size=(batch_size, max_batch_seq_len, self.max_word_length, self.char_embedding_dim), dtype=torch.float64)

@@ -36,6 +36,8 @@ class Model(nn.Module):
         :padding: CNN卷积padding大小
         :hidden_size: BiLSTM隐藏层大小
         """
+        # Max Sentence Length
+        self.max_seq_len = max_sent_length
         # Device
         self.device = device
         # Vocab
@@ -76,7 +78,7 @@ class Model(nn.Module):
         """
         """ CNN """
         # Batch Sentence Max Length
-        batch_seq_max_len = len(input_data[0])
+        batch_seq_max_len = min(len(input_data[0]), self.max_seq_len)
         input_data_char_embeded, input_data_length = self.cnn(input_data)
         # (batch_size, batch_sent_length, char_embeded_size)
         # (batch_size)
