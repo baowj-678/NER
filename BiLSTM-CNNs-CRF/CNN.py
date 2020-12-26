@@ -35,12 +35,11 @@ class CNN(nn.Module):
         # character embedding dim
         self.char_embedding_dim = char_embedding_dim
         # Embedding
-        self.char_embedding = nn.Parameter(torch.zeros((len(char_vocab), char_embedding_dim), dtype=torch.float64), requires_grad=True).to(device)
+        self.char_embedding = nn.Parameter(torch.zeros((len(char_vocab), char_embedding_dim), dtype=torch.float64), requires_grad=False).to(device)
         nn.init.normal_(self.char_embedding, 0, (3/char_embedding_dim) ** 0.5)
         # dropout
         self.dropout = nn.Dropout(p=p)
         # convolution
-
         self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=(kernel_n, 1), stride=1, padding=(padding, 0)).double()
         # max pooling
         self.max_pooling = nn.AdaptiveMaxPool1d(output_size=1)

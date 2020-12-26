@@ -68,7 +68,6 @@ class Model(nn.Module):
                        device=device,
                        entity_vocab=entity_vocab,
                        k=3).to(device)
-
     
     def forward(self, input_data, target_entity=None):
         """
@@ -97,10 +96,8 @@ class Model(nn.Module):
         input_data_packed = pack_padded_sequence(input_data_embeded, input_data_length, batch_first=True)
         
         data_lstm, hidden_state = self.lstm(input_data_packed)
-        # print('BiLSTM finish')
         """ CRF """
         loss = self.crf(input=data_lstm, entity=target_entity)
-        # print('CRF finish')
         return loss
         
 

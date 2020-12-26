@@ -30,8 +30,8 @@ if __name__ == '__main__':
     entity_vocab_path = os.path.join(data_dir, 'entity.txt')
     char_vocab_path = os.path.join(data_dir, 'char_vocab.txt')
     save_path = 'D:/NLP/NER/BiLSTM-CNNs-CRF/output/BiLSTM-CNN-CRF.pkl'
-    glove_file=None,
-    word2vec_file='D:/NLP/Word2Vec/GloVe/love6B50d.txt',
+    glove_file=None
+    word2vec_file='D:/NLP/Word2Vec/GloVe/love6B50d.txt'
 
     BATCH_SIZE = 16
     hidden_size = 128
@@ -90,7 +90,7 @@ if __name__ == '__main__':
                                  weight_decay=weight_decay)
     # 开始训练
     for i in range(ITORS):
-        print('='*8 + '开始训练' + '='*8)
+        print('='*8 + '开始训练 itor:{}'.format(i + 1) + '='*8)
         model.train()
         loss_sum = 0
         for epoch, data in enumerate(train_data_loader):
@@ -124,6 +124,6 @@ if __name__ == '__main__':
                             accuracy += np.sum(np.array(target) == predict)
                         if (epoch + 1) % test_batchs == 0:
                             break
-                    print('正确个数:{}, 总数:{}, 测试结果accu: {}'.format(accuracy, total, float(accuracy) / len(test_data_set)))
+                    print('正确个数:{}, 总数:{}, 测试结果accu: {}'.format(accuracy, total, float(accuracy) / total))
                     torch.save(model.state_dict(), save_path)
                 model.train()
