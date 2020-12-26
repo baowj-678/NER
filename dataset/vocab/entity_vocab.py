@@ -21,6 +21,8 @@ class EntityVocab:
         self._end_s_ = '_end_'
         self._start_i_ = 0
         self._end_i_ = 1
+        self._o_ = None
+        self._o_i_ = None
         # 正规字符开始标签
         self.begin = 2
         self._stoi_[self._end_s_] = self._end_i_
@@ -44,6 +46,8 @@ class EntityVocab:
                 self._stoi_[entity] = begin
                 self._itos_[begin] = entity
                 begin += 1
+        self._o_ = 'O'
+        self._o_i_ = self._stoi_[self._o_]
         return self._stoi_
     
     def sent2index(self, sent, padding_length: Optional[int]=None):
@@ -106,6 +110,10 @@ class EntityVocab:
     def end_s(self):
         """ 返回end str"""
         return self._end_s_
+    
+    @property
+    def o(self):
+        return self._o_
 
     def itos(self, index):
         """ 根据index查询word """
